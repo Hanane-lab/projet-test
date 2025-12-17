@@ -1,8 +1,10 @@
 package ma.ensaf.controller;
 
+import ma.ensaf.model.Event;
 import ma.ensaf.model.Ticket;
 import ma.ensaf.model.User;
 import ma.ensaf.repository.UserRepository;
+import ma.ensaf.service.EventService;
 import ma.ensaf.service.TicketService;
 import ma.ensaf.service.UserService;
 import org.springframework.http.ResponseEntity;
@@ -12,30 +14,76 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 
 @RestController
-@RequestMapping("/ticket")
+@RequestMapping("/api/tickets")
+@CrossOrigin(origins = "*")
 public class TicketController {
 
+    @Autowired
+    private TicketService ticketService;
 
-private final TicketService ticketService;
-private final UserRepository userRepo;
+    @Autowired
+    private EventService eventService;
 
+    @Autowired
+    private UserService userService;
 
-public TicketController(TicketService ticketService, UserRepository userRepo) {
-this.ticketService = ticketService;
-this.userRepo = userRepo;
-}
+    @PostMapping
+    @PreAuthorize("hasRole('PARTICIPANT')")
+    public ResponseEntity<?> bookTicket(@RequestParam Long eventId, @RequestParam Long userId) {
+        try {
+            Event event = eventService.getEventById(eventId);
+            User participant = userService.findUserById(userId);
 
+            Ticket ticket = ticketService.createTicket(event, participant);
+            return ResponseEntity.ok(ticket);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new AuthController.MessageResponse(e.getMessage()));
+        }
+    }
 
-@PostMapping("/client/buy/{eventId}")
-public Ticket buy(@PathVariable Long eventId, Authentication auth) throws Exception {
-User u = userRepo.findByEmail(auth.getName()).orElseThrow();
-return ticketService.createTicket(u, eventId);
-}
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('PARTICIPANT') or hasRole('ORGANISATEUR') or hasRole('ADMIN')")
+    public ResponseEntity<Ticket> getTicketById(@PathVariable Long id) {
+        Ticket ticket = ticketService.getTicketById(id);
+        return ResponseEntity.ok(ticket);
+    }
 
+    @GetMapping("/qr/{qrCode}")
+    @PreAuthorize("hasRole('PARTICIPANT') or hasRole('ORGANISATEUR') or hasRole('ADMIN')")
+    public ResponseEntity<Ticket> getTicketByQrCode(@PathVariable String qrCode) {
+        Ticket ticket = ticketService.getTicketByQrCode(qrCode);
+        return ResponseEntity.ok(ticket);
+    }
 
+    @GetMapping("/event/{eventId}")
+    @PreAuthorize("hasRole('ORGANISATEUR') or hasRole('ADMIN')")
+    public ResponseEntity<List<Ticket>> getTicketsByEvent(@PathVariable Long eventId) {
+        Event event = eventService.getEventById(eventId);
+        List<Ticket> tickets = ticketService.getTicketsByEvent(event);
+        return ResponseEntity.ok(tickets);
+    }
 
+    @GetMapping("/participant/{participantId}")
+    @PreAuthorize("hasRole('PARTICIPANT') or hasRole('ADMIN')")
+    public ResponseEntity<List<Ticket>> getTicketsByParticipant(@PathVariable Long participantId) {
+        User participant = userService.findUserById(participantId);
+        List<Ticket> tickets = ticketService.getTicketsByParticipant(participant);
+        return ResponseEntity.ok(tickets);
+    }
+
+    @PutMapping("/{id}/invalidate")
+    @PreAuthorize("hasRole('ORGANISATEUR') or hasRole('ADMIN')")
+    public ResponseEntity<?> invalidateTicket(@PathVariable Long id) {
+        try {
+            ticketService.invalidateTicket(id);
+            return ResponseEntity.ok(new AuthController.MessageResponse("Ticket invalidated successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new AuthController.MessageResponse(e.getMessage()));
+        }
+    }
 }

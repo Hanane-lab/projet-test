@@ -7,41 +7,58 @@ import org.springframework.stereotype.Service;
 
 
 import java.util.List;
-import java.util.Optional;
+import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.LocalDateTime;
 
 @Service
 public class EventService {
-private final EventRepository eventRepo;
 
+    @Autowired
+    private EventRepository eventRepository;
 
+    public Event createEvent(Event event) {
+        return eventRepository.save(event);
+    }
 
+    public Event getEventById(Long id) {
+        return eventRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Event not found with id: " + id));
+    }
 
-public EventService(EventRepository eventRepo) {
-this.eventRepo = eventRepo;
+    public List<Event> getAllEvents() {
+        return eventRepository.findAll();
+    }
+
+    public List<Event> getEventsByOrganizer(User organizer) {
+        return eventRepository.findByOrganizer(organizer);
+    }
+
+    public List<Event> getEventsAfterDate(LocalDateTime date) {
+        return eventRepository.findByEventDateAfter(date);
+    }
+
+    public List<Event> searchEventsByLocation(String location) {
+        return eventRepository.findByLocationContainingIgnoreCase(location);
+    }
+
+    public List<Event> searchEventsByTitle(String title) {
+        return eventRepository.findByTitleContainingIgnoreCase(title);
+    }
+
+    public Event updateEvent(Long id, Event eventDetails) {
+        Event event = getEventById(id);
+        event.setTitle(eventDetails.getTitle());
+        event.setDescription(eventDetails.getDescription());
+        event.setEventDate(eventDetails.getEventDate());
+        event.setLocation(eventDetails.getLocation());
+        event.setTotalTickets(eventDetails.getTotalTickets());
+        event.setTicketPrice(eventDetails.getTicketPrice());
+        return eventRepository.save(event);
+    }
+
+    public void deleteEvent(Long id) {
+        Event event = getEventById(id);
+        eventRepository.delete(event);
+    }
 }
-
-
-public Event create(Event e) {
-e.setAvailableSeats(e.getCapacity());
-return eventRepo.save(e);
-}
-
-
-public List<Event> findAllVisible() {
-return eventRepo.findByStatus("VISIBLE");
-}
-
-
-public Event update(Long id, Event newEvent) {
-Event e = eventRepo.findById(id).orElseThrow();
-e.setTitle(newEvent.getTitle());
-e.setDescription(newEvent.getDescription());
-e.setDateEvent(newEvent.getDateEvent());
-e.setPrice(newEvent.getPrice());
-e.setCapacity(newEvent.getCapacity());
-e.setAvailableSeats(newEvent.getAvailableSeats());
-e.setLocation(newEvent.getLocation());
-e.setImageUrl(newEvent.getImageUrl());
-return eventRepo.save(e);
-}}

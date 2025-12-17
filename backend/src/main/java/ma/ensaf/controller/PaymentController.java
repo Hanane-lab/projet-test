@@ -2,44 +2,61 @@ package ma.ensaf.controller;
 
 import ma.ensaf.model.Payment;
 import ma.ensaf.model.Ticket;
-import ma.ensaf.repository.PaymentRepository;
-import ma.ensaf.repository.TicketRepository;
 import ma.ensaf.service.PaymentService;
+import ma.ensaf.service.TicketService;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 
-import java.util.Map;
-import java.util.Optional;
 
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.access.prepost.PreAuthorize;
+
+import java.util.List;
 
 @RestController
+@RequestMapping("/api/payments")
+@CrossOrigin(origins = "*")
 public class PaymentController {
-private final PaymentRepository paymentRepository;
-private final TicketRepository ticketRepository;
 
+    @Autowired
+    private PaymentService paymentService;
 
-public PaymentController(PaymentRepository paymentRepository, TicketRepository ticketRepository) {
-this.paymentRepository = paymentRepository;
-this.ticketRepository = ticketRepository;
-}
+    @Autowired
+    private TicketService ticketService;
 
+    @PostMapping
+    @PreAuthorize("hasRole('PARTICIPANT')")
+    public ResponseEntity<?> processPayment(@RequestParam Long ticketId, @RequestParam Double amount) {
+        try {
+            Ticket ticket = ticketService.getTicketById(ticketId);
+            Payment payment = paymentService.createPayment(ticket, amount);
+            return ResponseEntity.ok(payment);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(new AuthController.MessageResponse(e.getMessage()));
+        }
+    }
 
-// Simulation de paiement
-@PostMapping("/payment/pay")
-public ResponseEntity<?> pay(@RequestBody Map<String, String> body) {
-Long ticketId = Long.valueOf(body.get("ticketId"));
-String method = body.getOrDefault("method", "STRIPE");
-Optional<Ticket> tOpt = ticketRepository.findById(ticketId);
-if (tOpt.isEmpty()) return ResponseEntity.badRequest().body(Map.of("error", "ticket not found"));
-Ticket t = tOpt.get();
-Payment p = new Payment();
-p.setTicket(t);
-p.setAmount(t.getEvent().getPrice());
-p.setPaymentMethod(method);
-p.setStatus("SUCCESS"); // simulated
-paymentRepository.save(p);
-return ResponseEntity.ok(Map.of("status", "SUCCESS", "paymentId", p.getId()));
-}
+    @GetMapping("/{id}")
+    @PreAuthorize("hasRole('PARTICIPANT') or hasRole('ADMIN')")
+    public ResponseEntity<Payment> getPaymentById(@PathVariable Long id) {
+        Payment payment = paymentService.getPaymentById(id);
+        return ResponseEntity.ok(payment);
+    }
+
+    @GetMapping("/ticket/{ticketId}")
+    @PreAuthorize("hasRole('PARTICIPANT') or hasRole('ADMIN')")
+    public ResponseEntity<List<Payment>> getPaymentsByTicket(@PathVariable Long ticketId) {
+        Ticket ticket = ticketService.getTicketById(ticketId);
+        List<Payment> payments = paymentService.getPaymentsByTicket(ticket);
+        return ResponseEntity.ok(payments);
+    }
+
+    @GetMapping("/status/{status}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<List<Payment>> getPaymentsByStatus(@PathVariable Payment.PaymentStatus status) {
+        List<Payment> payments = paymentService.getPaymentsByStatus(status);
+        return ResponseEntity.ok(payments);
+    }
 }

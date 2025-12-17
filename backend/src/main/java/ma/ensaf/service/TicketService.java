@@ -11,53 +11,55 @@ import com.google.zxing.client.j2se.MatrixToImageWriter;
 import com.google.zxing.common.BitMatrix;
 import org.springframework.stereotype.Service;
 
+import org.springframework.beans.factory.annotation.Autowired;
 
-import java.io.ByteArrayOutputStream;
-import java.util.Base64;
-
+import java.util.List;
 
 @Service
 public class TicketService {
 
+    @Autowired
+    private TicketRepository ticketRepository;
 
-private final TicketRepository ticketRepo;
-private final EventRepository eventRepo;
+    public Ticket createTicket(Event event, User participant) {
+        if (ticketRepository.existsByEventAndParticipant(event, participant)) {
+            throw new RuntimeException("Ticket already exists for this event and participant");
+        }
 
+        Ticket ticket = new Ticket(event, participant);
+        return ticketRepository.save(ticket);
+    }
 
-public TicketService(TicketRepository ticketRepo, EventRepository eventRepo) {
-this.ticketRepo = ticketRepo;
-this.eventRepo = eventRepo;
-}
+    public Ticket getTicketById(Long id) {
+        return ticketRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Ticket not found with id: " + id));
+    }
 
+    public Ticket getTicketByQrCode(String qrCode) {
+        return ticketRepository.findByQrCode(qrCode)
+                .orElseThrow(() -> new RuntimeException("Ticket not found with QR code: " + qrCode));
+    }
 
-public Ticket createTicket(User user, Long eventId) throws Exception {
+    public List<Ticket> getTicketsByEvent(Event event) {
+        return ticketRepository.findByEvent(event);
+    }
 
+    public List<Ticket> getTicketsByParticipant(User participant) {
+        return ticketRepository.findByParticipant(participant);
+    }
 
-Event e = eventRepo.findById(eventId).orElseThrow();
-if (e.getAvailableSeats() <= 0) throw new RuntimeException("Plus de places");
+    public void invalidateTicket(Long id) {
+        Ticket ticket = getTicketById(id);
+        ticket.setValid(false);
+        ticketRepository.save(ticket);
+    }
 
-
-Ticket t = new Ticket();
-t.setUser(user);
-t.setEvent(e);
-
-
-// QR CODE
-String qrText = "TICKET-" + user.getId() + "-" + eventId + "-" + System.currentTimeMillis();
-BitMatrix matrix = new MultiFormatWriter().encode(qrText, BarcodeFormat.QR_CODE, 300, 300);
-ByteArrayOutputStream bos = new ByteArrayOutputStream();
-MatrixToImageWriter.writeToStream(matrix, "PNG", bos);
-String base64 = Base64.getEncoder().encodeToString(bos.toByteArray());
-
-
-t.setQrCode(base64);
-
-
-// mise à jour places
-e.setAvailableSeats(e.getAvailableSeats() - 1);
-eventRepo.save(e);
-
-
-return ticketRepo.save(t);
-}
+    public void validateTicket(String qrCode) {
+        Ticket ticket = getTicketByQrCode(qrCode);
+        if (!ticket.getValid()) {
+            throw new RuntimeException("Ticket is already invalid");
+        }
+        ticket.setValid(true);
+        ticketRepository.save(ticket);
+    }
 }
