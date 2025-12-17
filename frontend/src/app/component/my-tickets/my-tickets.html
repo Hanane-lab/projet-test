@@ -1,0 +1,17 @@
+<div class="my-tickets">
+  <h2>Mes Billets</h2>
+  <div *ngIf="tickets.length > 0; else noTickets">
+    <div *ngFor="let ticket of tickets" class="ticket-card">
+      <h3>{{ ticket.event.title }}</h3>
+      <p>Date: {{ ticket.event.date | date:'short' }}</p>
+      <p>Lieu: {{ ticket.event.location }}</p>
+      <div class="qr-code">
+        <img [src]="'data:image/png;base64,' + ticket.qrCode" alt="QR Code">
+      </div>
+      <p>Billet #{{ ticket.id }}</p>
+    </div>
+  </div>
+  <ng-template #noTickets>
+    <p>Aucun billet trouvé.</p>
+  </ng-template>
+</div>

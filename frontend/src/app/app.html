@@ -5,6 +5,7 @@
       <a routerLink="/events">Événements</a>
       <a routerLink="/login" *ngIf="!isLoggedIn">Connexion</a>
       <a routerLink="/register" *ngIf="!isLoggedIn">Inscription</a>
+      <a routerLink="/my-tickets" *ngIf="isLoggedIn">Mes Billets</a>
       <button (click)="logout()" *ngIf="isLoggedIn">Déconnexion</button>
     </div>
   </nav>

@@ -1,15 +1,18 @@
 import { NgModule } from '@angular/core';
 import { RouterModule, Routes } from '@angular/router';
-import { TicketReservationComponent } from './components/ticket-reservation/ticket-reservation.component';
-import { EventListComponent } from './component/event-list/event-list';
+import { EventList } from './component/event-list/event-list';
+import { Login } from './component/login/login';
+import { Register } from './component/register/register';
+import { TicketReservation } from './component/ticket-reservation/ticket-reservation';
+import { MyTickets } from './component/my-tickets/my-tickets';
 
-const routes: Routes = [
+export const routes: Routes = [
   { path: '', redirectTo: '/events', pathMatch: 'full' },
-  { path: 'events', component: EventListComponent },
-  { path: 'login', component: LoginComponent },
-  { path: 'register', component: RegisterComponent },
-  { path: 'reserve/:id', component: TicketReservationComponent },
-  { path: '**', redirectTo: '/events' }
+  { path: 'events', component: EventList },
+  { path: 'login', component: Login },
+  { path: 'register', component: Register },
+  { path: 'reserve/:id', component: TicketReservation },
+  { path: '**', redirectTo: '/events' },{ path: 'my-tickets', component: MyTickets }
 ];
 
 @NgModule({

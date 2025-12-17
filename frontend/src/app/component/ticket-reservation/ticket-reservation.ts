@@ -1,14 +1,22 @@
 import { Component, OnInit } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import { EventService } from '../../event';
+import { PaymentService } from '../../payment';
+import { finalize } from 'rxjs/operators';
+import { CommonModule } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 
 
 @Component({
-  selector: 'app-ticket-reservation',
-  templateUrl: './ticket-reservation.component.html',
-  styleUrls: ['./ticket-reservation.component.css']
+  selector: 'app-ticket-reservation',standalone: true,
+  imports: [
+    CommonModule,
+    FormsModule   
+  ],
+  templateUrl: './ticket-reservation.html',
+  styleUrls: ['./ticket-reservation.css']
 })
-export class TicketReservationComponent implements OnInit {
+export class TicketReservation implements OnInit {
   eventId: number = 0;
   event: any = {};
   ticketCount: number = 1;
@@ -36,17 +44,26 @@ export class TicketReservationComponent implements OnInit {
     );
   }
 
+
   bookTicket() {
     this.paymentService.createPaymentIntent({
       eventId: this.eventId,
       ticketCount: this.ticketCount,
       totalAmount: this.event.price * this.ticketCount
-    }).then((result) => {
-      // Gérer le paiement via Stripe
-      const stripe = (window as any).Stripe('pk_test_your_stripe_key');
-      stripe.redirectToCheckout({
-        sessionId: result.sessionId
-      });
+    }).pipe(
+      finalize(() => {
+      })
+    ).subscribe({
+      next: (result: any) => {
+        const stripe = (window as any).Stripe('pk_test_your_stripe_key');
+        stripe.redirectToCheckout({
+          sessionId: result.sessionId
+        });
+      },
+      error: (error) => {
+        console.error('Erreur lors de la création du paiement', error);
+      }
     });
   }
+
 }

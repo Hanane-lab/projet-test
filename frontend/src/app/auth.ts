@@ -37,7 +37,6 @@ export class AuthService {
   }
 
   isAdmin(): boolean {
-    // Vérifier si le rôle est ADMIN dans le token
     const token = this.getToken();
     if (token) {
       try {
