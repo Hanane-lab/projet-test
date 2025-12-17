@@ -1,0 +1,14 @@
+<div class="event-list">
+  <h2>Catalogue des Événements</h2>
+  <div class="events-grid">
+    <div *ngFor="let event of events" class="event-card">
+      <h3>{{ event.title }}</h3>
+      <p>{{ event.description }}</p>
+      <p>Date: {{ event.date | date:'short' }}</p>
+      <p>Lieu: {{ event.location }}</p>
+      <p>Prix: {{ event.price | currency }}</p>
+      <button [disabled]="event.availableTickets === 0" (click)="bookTicket(event.id)">Réserver</button>
+      <p>Tickets disponibles: {{ event.availableTickets }}</p>
+    </div>
+  </div>
+</div>

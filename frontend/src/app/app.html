@@ -1,0 +1,14 @@
+<div class="app">
+  <nav>
+    <h1>Plateforme Événementielle</h1>
+    <div class="nav-links">
+      <a routerLink="/events">Événements</a>
+      <a routerLink="/login" *ngIf="!isLoggedIn">Connexion</a>
+      <a routerLink="/register" *ngIf="!isLoggedIn">Inscription</a>
+      <button (click)="logout()" *ngIf="isLoggedIn">Déconnexion</button>
+    </div>
+  </nav>
+  <main>
+    <router-outlet></router-outlet>
+  </main>
+</div>

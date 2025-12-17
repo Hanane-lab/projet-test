@@ -1,0 +1,17 @@
+<div class="reservation-form">
+  <h2>Réserver des Billets</h2>
+  <div *ngIf="event" class="event-details">
+    <h3>{{ event.title }}</h3>
+    <p>{{ event.description }}</p>
+    <p>Date: {{ event.date | date:'short' }}</p>
+    <p>Lieu: {{ event.location }}</p>
+    <p>Prix unitaire: {{ event.price | currency }}</p>
+  </div>
+
+  <form (ngSubmit)="bookTicket()">
+    <label for="ticketCount">Nombre de billets:</label>
+    <input type="number" id="ticketCount" [(ngModel)]="ticketCount" min="1" [max]="event.availableTickets || 1" required>
+
+    <button type="submit">Payer avec Stripe</button>
+  </form>
+</div>
